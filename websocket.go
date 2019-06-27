@@ -440,7 +440,7 @@ func (c *Client) SendProtobufParallel(roster *Roster, msg interface{}, ret inter
 	replyChan := make(chan []byte, opt.Parallel)
 	for g := 0; g < opt.Parallel; g++ {
 		go func(g int) {
-			log.Print("Asking", roster.List[g])
+			log.Print("Asking", roster.List[g], roster.List[g].URL)
 			reply, err := c.Send(roster.List[g], path, buf)
 			log.Print("Got reply from", g)
 			if err != nil {
