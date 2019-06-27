@@ -422,6 +422,51 @@ func (c *Client) SendProtobuf(dst *network.ServerIdentity, msg interface{}, ret 
 	return nil
 }
 
+type ParallelOptions struct {
+	Parallel  int
+	AskNodes  int
+	StartNode int
+	QuitError bool
+}
+
+func (c *Client) SendProtobufParallel(roster *Roster, msg interface{}, ret interface{}, opt ParallelOptions) error {
+	buf, err := protobuf.Encode(msg)
+	if err != nil {
+		return err
+	}
+	path := strings.Split(reflect.TypeOf(msg).String(), ".")[1]
+
+	errChan := make(chan error)
+	replyChan := make(chan []byte)
+	for g := 0; g < opt.Parallel; g++ {
+		go func(g int) {
+			log.Print("Asking", roster.List[g])
+			log.Print("Asking", roster.List[g].URL)
+			reply, err := c.Send(roster.List[g], path, buf)
+			log.Print("Got reply from", g)
+			if err != nil {
+				errChan <- err
+			} else {
+				replyChan <- reply
+			}
+		}(g)
+	}
+	var errors []error
+	for len(errors) < opt.Parallel {
+		select {
+		case reply := <-replyChan:
+			if ret != nil {
+				return protobuf.DecodeWithConstructors(reply, ret,
+					network.DefaultConstructors(c.suite))
+			}
+			return nil
+		case err := <-errChan:
+			errors = append(errors, err)
+		}
+	}
+	return errors[0]
+}
+
 // StreamingConn allows clients to read from it without sending additional
 // requests.
 type StreamingConn struct {
