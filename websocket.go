@@ -427,6 +427,7 @@ type ParallelOptions struct {
 	AskNodes  int
 	StartNode int
 	QuitError bool
+	KeepFirstSuccess bool
 }
 
 func (c *Client) SendProtobufParallel(roster *Roster, msg interface{}, ret interface{}, opt ParallelOptions) error {
@@ -442,10 +443,14 @@ func (c *Client) SendProtobufParallel(roster *Roster, msg interface{}, ret inter
 		go func(g int) {
 			log.Printf("Asking %+v from: %v - %v", msg, roster.List[g], roster.List[g].URL)
 			reply, err := c.Send(roster.List[g], path, buf)
-			log.Print("Got reply from", g)
+			log.Print("Got reply from", g, err)
 			if err != nil {
 				errChan <- err
 			} else {
+				if opt.KeepFirstSuccess{
+					opt.KeepFirstSuccess = false
+					roster.List = roster.List[g:g+1]
+				}
 				replyChan <- reply
 			}
 		}(g)
@@ -454,6 +459,7 @@ func (c *Client) SendProtobufParallel(roster *Roster, msg interface{}, ret inter
 	for len(errors) < opt.Parallel {
 		select {
 		case reply := <-replyChan:
+			log.Print("done")
 			if ret != nil {
 				return protobuf.DecodeWithConstructors(reply, ret,
 					network.DefaultConstructors(c.suite))
