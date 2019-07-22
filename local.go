@@ -257,6 +257,7 @@ func (l *LocalTest) WaitDone(t time.Duration) error {
 
 // CloseAll closes all the servers.
 func (l *LocalTest) CloseAll() {
+	log.Print()
 	log.Lvl3("Stopping all")
 	if r := recover(); r != nil {
 		// Make sure that a panic is correctly caught, as CloseAll is most often
@@ -267,7 +268,9 @@ func (l *LocalTest) CloseAll() {
 	if l.T != nil && l.T.Failed() {
 		return
 	}
+	log.Print()
 	InformAllServersStopped()
+	log.Print()
 
 	// If the debug-level is 0, we copy all errors to a buffer that
 	// will be discarded at the end.
@@ -275,6 +278,7 @@ func (l *LocalTest) CloseAll() {
 		log.OutputToBuf()
 	}
 
+	log.Print()
 	var wg sync.WaitGroup
 	for _, srv := range l.Servers {
 		wg.Add(1)
@@ -283,9 +287,12 @@ func (l *LocalTest) CloseAll() {
 			wg.Done()
 		}(srv)
 	}
+	log.Print()
 	wg.Wait()
+	log.Print()
 
 	if err := l.WaitDone(5 * time.Second); err != nil {
+		log.Print()
 		switch l.Check {
 		case CheckNone:
 			// Ignore waitDone
@@ -306,17 +313,22 @@ func (l *LocalTest) CloseAll() {
 		}
 	}
 
+	log.Print()
 	for _, node := range l.Nodes {
 		log.Lvl3("Closing node", node)
+		log.Print(node)
 		node.closeDispatch()
+		log.Print()
 	}
+	log.Print()
 	l.Nodes = make([]*TreeNodeInstance, 0)
 
 	sd := sync.WaitGroup{}
 	for _, srv := range l.Servers {
+		log.Print(srv)
 		sd.Add(1)
 		go func(server *Server) {
-			log.Lvl3("Closing server", server.ServerIdentity.Address)
+			log.LLvl3("Closing server", server.ServerIdentity.Address)
 			err := server.Close()
 			if err != nil {
 				log.Error("Closing server", server.ServerIdentity.Address,
@@ -327,21 +339,30 @@ func (l *LocalTest) CloseAll() {
 				log.Lvl1("Sleeping while waiting to close...")
 				time.Sleep(10 * time.Millisecond)
 			}
+			log.Print()
 			sd.Done()
+			log.Print()
 		}(srv)
 	}
+	log.Print()
 	sd.Wait()
+	log.Print()
 	l.Servers = map[network.ServerIdentityID]*Server{}
 	l.ctx.Stop()
+	log.Print()
 
 	os.RemoveAll(l.path)
+	log.Print()
 	l.closed = true
 
 	if log.DebugVisible() == 0 {
 		log.OutputToOs()
 	}
+	log.Print()
 	if l.Check != CheckNone {
+		log.Print()
 		log.AfterTest(nil)
+		log.Print()
 	}
 }
 
