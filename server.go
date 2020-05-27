@@ -175,13 +175,13 @@ func (c *Server) Address() network.Address {
 }
 
 // Service returns the service with the given name.
-func (c *Server) Service(name string) Service {
+func (c *Server) Service(name string) (Service, error) {
 	return c.serviceManager.service(name)
 }
 
 // GetService is kept for backward-compatibility.
-func (c *Server) GetService(name string) Service {
-	log.Warn("This method is deprecated - use `Server.Service` instead")
+// Deprecated: use `Server.Service` instead
+func (c *Server) GetService(name string) (Service, error) {
 	return c.Service(name)
 }
 

@@ -1045,7 +1045,9 @@ func TestClient_SendProtobufParallel(t *testing.T) {
 	}
 	var errs int
 	for _, server := range servers {
-		errs += server.Service(serviceWebSocket).(*ServiceWebSocket).Errors
+		service, err := server.Service(serviceWebSocket)
+		require.NoError(t, err)
+		errs += service.(*ServiceWebSocket).Errors
 	}
 	require.Equal(t, 3, errs)
 

@@ -352,7 +352,8 @@ func TestServiceManager_Service(t *testing.T) {
 	services := servers[0].serviceManager.availableServices()
 	require.NotEqual(t, 0, len(services), "no services available")
 
-	service := servers[0].serviceManager.service("testService")
+	service, err := servers[0].serviceManager.service("testService")
+	require.NoError(t, err)
 	require.NotNil(t, service, "Didn't find service testService")
 }
 
@@ -361,7 +362,8 @@ func TestServiceMessages(t *testing.T) {
 	defer local.CloseAll()
 	servers, _, _ := local.GenTree(2, true)
 
-	service := servers[0].serviceManager.service(ismServiceName)
+	service, err := servers[0].serviceManager.service(ismServiceName)
+	require.NoError(t, err)
 	require.NotNil(t, service, "Didn't find service ISMService")
 	ism := service.(*ServiceMessages)
 	ism.SendRaw(servers[0].ServerIdentity, &SimpleResponse{})
@@ -373,8 +375,10 @@ func TestServiceProtocolInstantiation(t *testing.T) {
 	defer local.CloseAll()
 	servers, _, tree := local.GenTree(2, true)
 
-	s1 := servers[0].serviceManager.service(dummyService2Name)
-	s2 := servers[1].serviceManager.service(dummyService2Name)
+	s1, err := servers[0].serviceManager.service(dummyService2Name)
+	require.NoError(t, err)
+	s2, err := servers[1].serviceManager.service(dummyService2Name)
+	require.NoError(t, err)
 
 	ds1 := s1.(*dummyService2)
 	ds2 := s2.(*dummyService2)
@@ -394,8 +398,10 @@ func TestServiceGenericConfig(t *testing.T) {
 	defer local.CloseAll()
 	servers, _, tree := local.GenTree(2, true)
 
-	s1 := servers[0].serviceManager.service(dummyService2Name)
-	s2 := servers[1].serviceManager.service(dummyService2Name)
+	s1, err := servers[0].serviceManager.service(dummyService2Name)
+	require.NoError(t, err)
+	s2, err := servers[1].serviceManager.service(dummyService2Name)
+	require.NoError(t, err)
 
 	ds1 := s1.(*dummyService2)
 	ds2 := s2.(*dummyService2)
@@ -432,7 +438,8 @@ func TestServiceConfigRace(t *testing.T) {
 		for node := 0; node < nbrNodes; node++ {
 			trees[node] = roster.GenerateNaryTreeWithRoot(nbrNodes,
 				servers[node].ServerIdentity)
-			s := servers[node].serviceManager.service(dummyService2Name)
+			s, err := servers[node].serviceManager.service(dummyService2Name)
+			require.NoError(t, err)
 			dummyServices[node] = s.(*dummyService2)
 			dummyServices[node].link = msgs
 		}

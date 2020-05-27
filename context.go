@@ -141,7 +141,7 @@ func (c *Context) RegisterMessageProxy(m MessageProxy) {
 }
 
 // Service returns the corresponding service.
-func (c *Context) Service(name string) Service {
+func (c *Context) Service(name string) (Service, error) {
 	return c.manager.service(name)
 }
 

@@ -1,6 +1,7 @@
 package onet
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -27,11 +28,25 @@ func TestServer_ProtocolRegisterName(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestServer_GetService(t *testing.T) {
+func TestServer_GetUnknownService(t *testing.T) {
 	c := NewLocalServer(tSuite, 0)
 	defer c.Close()
-	s := c.Service("nil")
+	s, err := c.Service("nil")
+	require.NoError(t, err)
 	require.Nil(t, s)
+}
+
+func TestServer_GetInvalidService(t *testing.T) {
+	c := NewLocalServer(tSuite, 0)
+	defer c.Close()
+
+	RegisterNewService("invalid", func(c *Context) (Service, error) {
+		return nil, errors.New("fail to create new service")
+	})
+	defer UnregisterService("invalid")
+
+	_, err := c.Service("invalid")
+	require.Error(t, err)
 }
 
 func TestServer_Database(t *testing.T) {

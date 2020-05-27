@@ -200,7 +200,7 @@ func (sc *SimulationConfig) Save(dir string) error {
 }
 
 // GetService returns the service with the given name.
-func (sc *SimulationConfig) GetService(name string) Service {
+func (sc *SimulationConfig) GetService(name string) (Service, error) {
 	return sc.Server.serviceManager.service(name)
 }
 

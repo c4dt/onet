@@ -2,6 +2,7 @@ package onet
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -488,19 +489,19 @@ func (s *serviceManager) availableServices() (ret []string) {
 
 // service returns the service implementation being registered to this name or
 // nil if no service by this name is available.
-func (s *serviceManager) service(name string) Service {
+func (s *serviceManager) service(name string) (Service, error) {
 	id := ServiceFactory.ServiceID(name)
 	if id.Equal(NilServiceID) {
-		return nil
+		return nil, nil
 	}
+
 	s.servicesMutex.Lock()
 	defer s.servicesMutex.Unlock()
 	ser, ok := s.services[id]
 	if !ok {
-		log.Error("this service is not instantiated")
-		return nil
+		return nil, errors.New("service found but not instantiated")
 	}
-	return ser
+	return ser, nil
 }
 
 func (s *serviceManager) serviceByID(id ServiceID) (Service, bool) {
