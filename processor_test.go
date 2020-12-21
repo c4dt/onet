@@ -148,15 +148,9 @@ func TestServiceProcessor_ProcessClientRequest(t *testing.T) {
 
 	// Test non-existing endpoint
 	buf, err = protobuf.Encode(&testMsg2{42})
-	require.Nil(t, err)
-	lvl := log.DebugVisible()
-	log.SetDebugVisible(0)
-	log.OutputToBuf()
+	require.NoError(t, err)
 	_, _, err = p.ProcessClientRequest(nil, "testMsgNotAvailable", buf)
-	log.OutputToOs()
-	log.SetDebugVisible(lvl)
-	require.NotNil(t, err)
-	require.NotEqual(t, "", log.GetStdErr())
+	require.Error(t, err)
 }
 
 func TestServiceProcessor_ProcessClientRequest_Streaming(t *testing.T) {

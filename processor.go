@@ -566,33 +566,29 @@ func (p *ServiceProcessor) IsStreaming(path string) (bool, error) {
 // documentation.
 func (p *ServiceProcessor) ProcessClientRequest(req *http.Request, path string, buf []byte) ([]byte, *StreamingTunnel, error) {
 	mh, ok := p.handlers[path]
-
+	if !ok {
+		return nil, nil, xerrors.Errorf("no handler found for %v", path)
+	}
 	if mh.streaming {
-		return nil, nil, xerrors.Errorf("using a streaming request with " +
-			"ProcessClientRequest: Please use instead ProcessClientStreamRequest")
+		return nil, nil, xerrors.New("using a streaming request with " +
+			"ProcessClientRequest: please use instead ProcessClientStreamRequest")
 	}
 
-	reply, _, err := func() (interface{}, chan bool, error) {
-		if !ok {
-			err := xerrors.New("The requested message hasn't been registered: " + path)
-			log.Error(err)
-			return nil, nil, err
-		}
-		msg := reflect.New(mh.msgType).Interface()
-		if err := protobuf.DecodeWithConstructors(buf, msg,
-			network.DefaultConstructors(p.Context.server.Suite())); err != nil {
-			return nil, nil, xerrors.Errorf("decoding: %v", err)
-		}
-		return callInterfaceFunc(mh.handler, msg, mh.streaming)
-	}()
+	msg := reflect.New(mh.msgType).Interface()
+	if err := protobuf.DecodeWithConstructors(buf, msg,
+		network.DefaultConstructors(p.Context.server.Suite())); err != nil {
+		return nil, nil, xerrors.Errorf("decoding message: %v", err)
+	}
+
+	reply, _, err := callInterfaceFunc(mh.handler, msg, mh.streaming)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("call handler: %v", err)
 	}
 
 	buf, err = protobuf.Encode(reply)
 	if err != nil {
-		log.Error(err)
-		return nil, nil, xerrors.Errorf("encoding: %v", err)
+		return nil, nil, xerrors.Errorf("encoding reply: %v", err)
 	}
+
 	return buf, nil, nil
 }
