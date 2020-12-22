@@ -469,15 +469,13 @@ func (p *ServiceProcessor) ProcessClientStreamRequest(req *http.Request, path st
 	// the request. Executing the request should fill the service's channel, as
 	// the service will use the same chanel for further requests.
 	go func() {
-		for {
-			buf, ok := <-clientInputs
-			if !ok {
-				if stopServiceChan != nil {
-					close(stopServiceChan)
-				}
-				return
+		defer func() {
+			if stopServiceChan != nil {
+				close(stopServiceChan)
 			}
+		}()
 
+		for buf := range clientInputs {
 			msg := reflect.New(mh.msgType).Interface()
 
 			err := protobuf.DecodeWithConstructors(buf, msg,
@@ -523,7 +521,7 @@ func (p *ServiceProcessor) ProcessClientStreamRequest(req *http.Request, path st
 					}
 					if chosen == 0 {
 						// Send information down to the client.
-						buf, err = protobuf.Encode(v.Interface())
+						buf, err := protobuf.Encode(v.Interface())
 						if err != nil {
 							log.Error(err)
 							return
