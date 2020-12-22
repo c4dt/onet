@@ -500,9 +500,7 @@ func (p *ServiceProcessor) ProcessClientStreamRequest(req *http.Request, path st
 
 				// Since this goroutine is created each time the client sends a
 				// request, we then must ensure the outChan is closed only once.
-				defer closeOutOnce.Do(func() {
-					close(outChan)
-				})
+				defer closeOutOnce.Do(func() { close(outChan) })
 
 				for {
 					v, ok := inChan.Recv()
