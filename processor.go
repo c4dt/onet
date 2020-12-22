@@ -455,7 +455,6 @@ func (p *ServiceProcessor) ProcessClientStreamRequest(req *http.Request, path st
 	clientInputs chan []byte) (chan []byte, error) {
 
 	outChan := make(chan []byte, 100)
-	var closeOutOnce sync.Once
 
 	mh, ok := p.handlers[path]
 	if !ok {
@@ -466,8 +465,9 @@ func (p *ServiceProcessor) ProcessClientStreamRequest(req *http.Request, path st
 	// the request. Executing the request should fill the service's channel, as
 	// the service will use the same chanel for further requests.
 	go func() {
-		var stopServiceChan chan bool
+		var closeOutOnce sync.Once
 
+		var stopServiceChan chan bool
 		defer func() {
 			if stopServiceChan != nil {
 				close(stopServiceChan)
@@ -500,11 +500,9 @@ func (p *ServiceProcessor) ProcessClientStreamRequest(req *http.Request, path st
 
 				// Since this goroutine is created each time the client sends a
 				// request, we then must ensure the outChan is closed only once.
-				defer func() {
-					closeOutOnce.Do(func() {
-						close(outChan)
-					})
-				}()
+				defer closeOutOnce.Do(func() {
+					close(outChan)
+				})
 
 				for {
 					v, ok := inChan.Recv()
